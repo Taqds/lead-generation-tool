@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  campaigns     Campaign[]
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Campaign {
+  id        String   @id @default(cuid())
+  niche     String
+  location  String
+  count     Int
+  status    String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leads     Lead[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lead {
+  id           String   @id @default(cuid())
+  campaignId   String
+  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  businessName String
+  category     String?
+  webUrl       String?
+  email        String?
+  phone        String?
+  address      String?
+  mapsLink     String?
+  rating       Float?
+  reviewCount  Int?
+  source       String?
+
+  audit        WebsiteAudit?
+  report       LeadReport?
+  
+  status       String   @default("PENDING") // PENDING, AUDITING, REPORTING, DONE, FAILED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model WebsiteAudit {
+  id           String   @id @default(cuid())
+  leadId       String   @unique
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // Technical Data
+  title            String?
+  metaDescription  String?
+  h1Count          Int?
+  h2Count          Int?
+  hasSsl           Boolean @default(false)
+  hasContactForm   Boolean @default(false)
+  hasCta           Boolean @default(false)
+  hasSchema        Boolean @default(false)
+  hasSocialLinks   Boolean @default(false)
+  hasReviews       Boolean @default(false)
+  
+  // Scores
+  seoScore        Int @default(0)
+  croScore        Int @default(0)
+  trustScore      Int @default(0)
+  technicalScore  Int @default(0)
+  localSeoScore   Int @default(0)
+  overallScore    Int @default(0)
+
+  rawDataJson     Json?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LeadReport {
+  id           String   @id @default(cuid())
+  leadId       String   @unique
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  summary      String?  @db.Text
+  topGaps      Json?    // Array of strings
+  whyGapsMatter String? @db.Text
+  recommendedFixes String? @db.Text
+  
+  outreachAngle String? @db.Text
+  coldEmail     String? @db.Text
+  followUpEmail String? @db.Text
+  shortDm       String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
