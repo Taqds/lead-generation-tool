@@ -15,9 +15,12 @@ export interface CrawlResult {
   emailAddresses: string[];
   phoneNumbers: string[];
   rawHtml?: string;
+  loadTimeMs: number;
+  isOutdatedUI?: boolean; // Can be manually flagged or AI inferred later
 }
 
 export async function crawlWebsite(url: string): Promise<CrawlResult> {
+  const startTime = Date.now();
   try {
     const { data: html } = await axios.get(url, {
       timeout: 10000,
@@ -25,9 +28,11 @@ export async function crawlWebsite(url: string): Promise<CrawlResult> {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
       },
     });
+    const loadTimeMs = Date.now() - startTime;
 
     const $ = cheerio.load(html);
     
+    // ... same as before
     // Extract Metadata
     const title = $("title").text();
     const metaDescription = $('meta[name="description"]').attr("content");
@@ -79,7 +84,9 @@ export async function crawlWebsite(url: string): Promise<CrawlResult> {
       hasReviewsSection,
       emailAddresses,
       phoneNumbers,
-      rawHtml: html.substring(0, 5000), // Only store snippet
+      rawHtml: html.substring(0, 5000), 
+      loadTimeMs,
+      isOutdatedUI: html.includes("frameset") || html.includes("table border") || html.includes("<font") // Rough heuristic for legacy code
     };
   } catch (error) {
     console.error(`Error crawling ${url}:`, error);

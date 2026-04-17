@@ -6,6 +6,8 @@ import { crawlWebsite } from "../services/crawler";
 import { calculateAuditScores } from "../utils/scoring";
 import { generateLeadReport } from "../services/openai";
 import { QUEUE_NAMES, leadAuditQueue, aiReportQueue } from "./queues";
+import { slugify } from "../utils";
+import crypto from "crypto";
 
 // 1. Discovery Worker
 const discoveryWorker = new Worker(
@@ -27,6 +29,10 @@ const discoveryWorker = new Worker(
             ...leadData,
             campaignId,
             status: "PENDING",
+            isClaimed: leadData.isClaimed ?? true,
+            hasGmbPhotos: leadData.hasGmbPhotos ?? true,
+            isGmbOptimized: leadData.isGmbOptimized ?? true,
+            hasLowRating: leadData.hasLowRating ?? false,
           },
         });
 
@@ -61,28 +67,58 @@ const auditWorker = new Worker(
     });
 
     try {
-      if (!webUrl) throw new Error("No website URL provided");
+      let crawlData = {
+        title: "", metaDescription: "", h1Count: 0, h2Count: 0, 
+        hasSsl: false, hasContactForm: false, hasCta: false, 
+        hasSchema: false, hasSocialLinks: false, hasReviewsSection: false,
+        emailAddresses: [], phoneNumbers: [], loadTimeMs: 0, isOutdatedUI: false
+      };
+
+      if (webUrl) {
+        crawlData = await crawlWebsite(webUrl);
+      }
       
-      const crawlData = await crawlWebsite(webUrl);
       const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-      const scores = calculateAuditScores(crawlData, lead);
+      const scores = calculateAuditScores(crawlData as any, lead);
 
       await prisma.websiteAudit.create({
         data: {
           leadId,
-          ...crawlData,
-          ...scores,
+          title: crawlData.title,
+          metaDescription: crawlData.metaDescription,
+          h1Count: crawlData.h1Count,
+          h2Count: crawlData.h2Count,
+          hasSsl: crawlData.hasSsl,
+          hasContactForm: crawlData.hasContactForm,
+          hasCta: crawlData.hasCta,
+          hasSchema: crawlData.hasSchema,
+          hasSocialLinks: crawlData.hasSocialLinks,
+          hasReviews: crawlData.hasReviewsSection,
+          loadTimeMs: crawlData.loadTimeMs,
+          isOutdatedUI: crawlData.isOutdatedUI || false,
+          seoScore: scores.seoScore,
+          croScore: scores.croScore,
+          trustScore: scores.trustScore,
+          technicalScore: scores.technicalScore,
+          localSeoScore: scores.localSeoScore,
+          overallScore: scores.overallScore,
           rawDataJson: crawlData as any,
-          emailAddresses: undefined, // Separated logic
-          phoneNumbers: undefined,
-        } as any,
+        },
       });
 
-      // Update lead with any found emails/phones if they were missing
+      // Update lead with any found emails/phones if they were missing, plus priority and slug
+      const randomId = crypto.randomBytes(3).toString("hex");
+      const generatedSlug = `${slugify(lead?.businessName || "business")}-${randomId}`;
+
       await prisma.lead.update({
         where: { id: leadId },
         data: {
           email: lead?.email || crawlData.emailAddresses[0],
+          phone: lead?.phone || crawlData.phoneNumbers[0],
+          priority: scores.priority,
+          priorityScore: scores.priorityScore,
+          priorityReason: scores.priorityReason,
+          slug: lead?.slug || generatedSlug,
           status: "REPORTING",
         },
       });

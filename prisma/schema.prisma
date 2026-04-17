@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -80,10 +79,21 @@ model Lead {
   reviewCount  Int?
   source       String?
 
+  // GMB Specifics
+  isClaimed       Boolean @default(true)
+  hasGmbPhotos    Boolean @default(true)
+  isGmbOptimized  Boolean @default(true)
+  hasLowRating    Boolean @default(false)
+
   audit        WebsiteAudit?
   report       LeadReport?
   
+  priority     String   @default("COLD") // HOT, WARM, COLD
+  priorityScore Int     @default(0)
+  priorityReason String?  @db.Text
+  
   status       String   @default("PENDING") // PENDING, AUDITING, REPORTING, DONE, FAILED
+  slug         String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -112,6 +122,8 @@ model WebsiteAudit {
   technicalScore  Int @default(0)
   localSeoScore   Int @default(0)
   overallScore    Int @default(0)
+  loadTimeMs      Int @default(0)
+  isOutdatedUI    Boolean @default(false)
 
   rawDataJson     Json?
   
@@ -128,6 +140,9 @@ model LeadReport {
   topGaps      Json?    // Array of strings
   whyGapsMatter String? @db.Text
   recommendedFixes String? @db.Text
+  
+  // AI Service Offer
+  serviceOffer Json?    // { type: string, problem: string, solution: string, impact: string, price: string }
   
   outreachAngle String? @db.Text
   coldEmail     String? @db.Text

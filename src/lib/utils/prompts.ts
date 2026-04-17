@@ -7,6 +7,7 @@ Business Data:
 - Name: {{businessName}}
 - Niche: {{niche}}
 - Overall Score: {{overallScore}}/100
+- Personalized Report URL: {{reportUrl}}
 
 Technical Audit:
 - SEO Score: {{seoScore}}
@@ -22,10 +23,17 @@ Return a JSON object with the following structure:
   "topGaps": ["Gap 1", "Gap 2", "Gap 3", "Gap 4", "Gap 5"],
   "whyGapsMatter": "Explanation of the business impact of these gaps.",
   "recommendedFixes": "Strategic advice on how to fix the issues.",
+  "serviceOffer": {
+    "type": "One of: Website Redesign, Performance Optimization, SEO Foundations, or Conversion Engine Setup",
+    "problem": "Briefly state the #1 issue found.",
+    "solution": "How your agency will fix it.",
+    "impact": "Estimated impact on their business (e.g. 30% more leads).",
+    "price": "Suggested price range (e.g. $1,500 - $2,500)"
+  },
   "outreachAngle": "The best psychological angle to use when contacting this business owner.",
-  "coldEmail": "A personalized, short, and punchy cold email draft.",
+  "coldEmail": "A personalized, short, and punchy cold email draft. MUST include the Personalized Report URL.",
   "followUpEmail": "A follow-up email draft for 3 days later.",
-  "shortDm": "A short, engaging DM for LinkedIn or Instagram."
+  "shortDm": "A short, engaging DM for LinkedIn or Instagram. MUST mention the Personalized Report URL."
 }
 
 Rules:
