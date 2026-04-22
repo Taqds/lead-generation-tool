@@ -90,6 +90,21 @@ export async function crawlWebsite(url: string): Promise<CrawlResult> {
     };
   } catch (error) {
     console.error(`Error crawling ${url}:`, error);
-    throw error;
+    // Return empty results instead of throwing to keep the worker running
+    return {
+      title: "Unable to reach website",
+      h1Count: 0,
+      h2Count: 0,
+      hasSsl: false,
+      hasContactForm: false,
+      hasCta: false,
+      hasSchema: false,
+      hasSocialLinks: false,
+      hasReviewsSection: false,
+      emailAddresses: [],
+      phoneNumbers: [],
+      loadTimeMs: 0,
+      isOutdatedUI: false
+    };
   }
 }

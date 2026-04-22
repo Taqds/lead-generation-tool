@@ -1,320 +1,165 @@
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { 
-  ShieldCheck, AlertTriangle, Zap, ArrowRight, 
-  CheckCircle2, XCircle, Clock, Smartphone,
-  BarChart, Target, Calendar, MessageSquare
-} from "lucide-react";
+import { ShieldCheck, Zap, Target, CheckCircle2, XCircle, AlertTriangle, ArrowRight, MessageSquare, Clock, ArrowUpRight } from "lucide-react";
 
 export default async function PublicReportPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
   const lead = await prisma.lead.findUnique({
     where: { slug },
-    include: {
-      audit: true,
-      report: true,
-    },
+    include: { audit: true, report: true },
   });
 
-  if (!lead || !lead.audit || !lead.report) {
-    notFound();
-  }
+  if (!lead || !lead.audit || !lead.report) notFound();
 
   const scores = lead.audit;
-  
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-500";
-    if (score >= 50) return "text-orange-500";
-    return "text-red-500";
-  };
+  const topGaps = (lead.report.topGaps as string[]) || [];
+  const scoreColor = (s: number) => s >= 80 ? "#10b981" : s >= 50 ? "#f59e0b" : "#f43f5e";
 
   const criticalIssues = [
-    { label: "SSL Security", value: scores.hasSsl, desc: "Essential for data protection and Google rankings." },
-    { label: "Conversion Forms", value: scores.hasContactForm, desc: "Captures potential customers automatically." },
-    { label: "Call to Action", value: scores.hasCta, desc: "Tells visitors exactly what to do next." },
-    { label: "Page Load Speed", value: scores.loadTimeMs < 3000, desc: "Visitors leave if pages take >3s to load." },
-    { label: "Modern Layout", value: !scores.isOutdatedUI, desc: "Outdated designs often drive customers away." }
+    { label: "SSL Security", value: scores.hasSsl, desc: "Essential for data protection and Google rankings.", i: ShieldCheck },
+    { label: "Conversion Forms", value: scores.hasContactForm, desc: "Captures potential customers automatically.", i: MessageSquare },
+    { label: "Call to Action", value: scores.hasCta, desc: "Tells visitors exactly what to do next.", i: Target },
+    { label: "Page Load Speed", value: scores.loadTimeMs < 3000, desc: "Visitors leave if pages take >3s to load.", i: Zap },
+    { label: "Modern Layout", value: !scores.isOutdatedUI, desc: "Outdated designs often drive customers away.", i: ArrowRight }
   ];
 
   return (
-    <div className="min-h-screen bg-[#030712] text-white selection:bg-primary/30">
-      {/* Hero / Header */}
-      <header className="px-6 py-12 md:py-20 max-w-7xl mx-auto relative overflow-hidden">
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
+    <div style={{ backgroundColor: "#030712", minHeight: "100vh", color: "#fff", fontFamily: "var(--font-sans)" }}>
+      {/* Hero */}
+      <header style={{ padding: "80px 40px", maxWidth: 1200, margin: "0 auto", position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, right: 0, width: 400, height: 400, backgroundColor: "rgba(0,245,255,0.1)", filter: "blur(100px)", borderRadius: "50%", pointerEvents: "none" }} />
         
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-12">
-          <div className="max-w-2xl">
-            <Badge variant="outline" className="text-primary border-primary bg-primary/5 px-3 py-1 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              Exclusive Growth Audit for {lead.businessName}
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-              We found <span className="text-primary">{(lead.report.topGaps as string[]).length} critical gaps</span> in your online presence.
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 40, position: "relative", zIndex: 10 }}>
+          <div style={{ maxWidth: 600 }}>
+            <div style={{ padding: "6px 14px", backgroundColor: "rgba(0,245,255,0.1)", border: "1px solid rgba(0,245,255,0.2)", borderRadius: 999, fontSize: 10, fontWeight: 900, color: "#00f5ff", letterSpacing: "0.15em", textTransform: "uppercase" as const, display: "inline-block", marginBottom: 24 }}>
+              Exclusive Growth Audit
+            </div>
+            <h1 style={{ fontSize: 56, fontWeight: 900, letterSpacing: -2, lineHeight: 1.1, marginBottom: 24 }}>
+              We found <span style={{ color: "#00f5ff" }}>{topGaps.length} critical gaps</span> in your digital presence.
             </h1>
-            <p className="text-xl text-slate-400 mb-8 leading-relaxed">
-              Your overall digital health score is <span className="text-white font-bold">{scores.overallScore}/100</span>. We've identified exactly what's holding you back from more customers.
+            <p style={{ fontSize: 18, fontWeight: 500, color: "#9ca3af", lineHeight: 1.6, marginBottom: 40 }}>
+              {lead.businessName}, your overall health score is <strong style={{ color: "#fff" }}>{scores.overallScore}/100</strong>. We've identified exactly what's blocking you from higher revenue.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <Button size="lg" className="rounded-full shadow-lg shadow-primary/25 px-8">
-                <Calendar className="mr-2 h-4 w-4" /> Book Free Consultation
-              </Button>
-              <Button size="lg" variant="outline" className="rounded-full border-white/10 hover:bg-white/5">
-                <BarChart className="mr-2 h-4 w-4" /> Full Audit Report
-              </Button>
+            <div style={{ display: "flex", gap: 16 }}>
+              <button className="btn-primary" style={{ padding: "16px 32px", fontSize: 12, borderRadius: 999 }}>
+                BOOK FREE CONSULTATION
+              </button>
             </div>
           </div>
 
-          <div className="relative flex-shrink-0">
-            <div className="relative h-64 w-64 md:h-80 md:w-80 flex items-center justify-center p-8 bg-white/5 rounded-full border border-white/10 backdrop-blur-xl">
-              <svg className="h-full w-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle className="text-white/5" strokeWidth="8" stroke="currentColor" fill="transparent" r="42" cx="50" cy="50" />
-                <circle className="text-primary" strokeWidth="8" strokeDasharray={2 * Math.PI * 42} strokeDashoffset={2 * Math.PI * 42 * (1 - scores.overallScore / 100)} strokeLinecap="round" stroke="currentColor" fill="transparent" r="42" cx="50" cy="50" />
-              </svg>
-              <div className="absolute flex flex-col items-center">
-                <span className="text-6xl md:text-7xl font-black tracking-tighter">{scores.overallScore}</span>
-                <span className="text-sm font-bold uppercase tracking-widest text-slate-400">Total Score</span>
-              </div>
+          <div style={{ position: "relative", width: 280, height: 280, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#0a0c10", borderRadius: "50%", border: "1px solid #1a1b21", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
+            <svg viewBox="0 0 100 100" style={{ position: "absolute", width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+              <circle cx="50" cy="50" r="44" fill="none" stroke="#1a1b21" strokeWidth="6" />
+              <circle cx="50" cy="50" r="44" fill="none" stroke={scoreColor(scores.overallScore)} strokeWidth="6"
+                strokeDasharray={2 * Math.PI * 44}
+                strokeDashoffset={2 * Math.PI * 44 * (1 - scores.overallScore / 100)}
+                strokeLinecap="round"
+                style={{ filter: `drop-shadow(0 0 10px ${scoreColor(scores.overallScore)})` }}
+              />
+            </svg>
+            <div style={{ textAlign: "center", position: "relative", zIndex: 10 }}>
+              <div style={{ fontSize: 64, fontWeight: 900, fontFamily: "var(--font-mono)", lineHeight: 1, color: "#fff" }}>{scores.overallScore}</div>
+              <div style={{ fontSize: 10, fontWeight: 900, color: "#6b7280", letterSpacing: "0.2em", textTransform: "uppercase" as const, marginTop: 4 }}>Total Score</div>
             </div>
-            {/* Decorative orbit dots */}
-            <div className="absolute top-0 right-0 h-4 w-4 bg-primary rounded-full animate-pulse shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
-            <div className="absolute bottom-10 left-0 h-3 w-3 bg-red-500 rounded-full animate-pulse opacity-50" />
           </div>
         </div>
       </header>
 
-      {/* Issues Grid */}
-      <section className="px-6 py-20 max-w-7xl mx-auto border-t border-white/5">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-4">Critical Technical Summary</h2>
-          <p className="text-slate-400">Our automated system audited your site based on conversion best-practices.</p>
+      {/* Critical Issues */}
+      <section style={{ padding: "80px 40px", maxWidth: 1200, margin: "0 auto", borderTop: "1px solid #1a1b21" }}>
+        <div style={{ textAlign: "center", marginBottom: 60 }}>
+          <h2 style={{ fontSize: 32, fontWeight: 900, marginBottom: 12, color: "#fff" }}>Technical Performance Summary</h2>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#6b7280" }}>Automated extraction based on modern conversion architecture.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
           {criticalIssues.map((issue, idx) => (
-            <Card key={idx} className="bg-white/5 border-white/10 text-white overflow-hidden group hover:bg-white/10 transition-all">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  {issue.value ? (
-                    <div className="bg-green-500/20 p-2 rounded-lg"><CheckCircle2 className="text-green-500 h-6 w-6" /></div>
-                  ) : (
-                    <div className="bg-red-500/20 p-2 rounded-lg animate-pulse"><XCircle className="text-red-500 h-6 w-6" /></div>
-                  )}
-                  {issue.value ? (
-                      <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Optimized</Badge>
-                  ) : (
-                      <Badge variant="destructive" className="animate-bounce">Requires Action</Badge>
-                  )}
+            <div key={idx} style={{ backgroundColor: "#0c0d12", border: "1px solid #1a1b21", borderRadius: 24, padding: 32 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div style={{ padding: 10, backgroundColor: issue.value ? "rgba(16,185,129,0.1)" : "rgba(244,63,94,0.1)", borderRadius: 12, color: issue.value ? "#10b981" : "#f43f5e" }}>
+                  {issue.value ? <CheckCircle2 style={{ width: 24, height: 24 }} /> : <XCircle style={{ width: 24, height: 24 }} />}
                 </div>
-                <h3 className="text-lg font-bold mb-2">{issue.label}</h3>
-                <p className="text-sm text-slate-400 mb-4">{issue.desc}</p>
-                <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
-                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</span>
-                   <span className={issue.value ? "text-green-500 text-xs font-bold" : "text-red-500 text-xs font-bold"}>
-                     {issue.value ? "Passed" : "Action Required"}
-                   </span>
-                </div>
-              </CardContent>
-            </Card>
+                <span style={{ fontSize: 9, fontWeight: 900, padding: "4px 10px", borderRadius: 6, backgroundColor: issue.value ? "rgba(16,185,129,0.1)" : "rgba(244,63,94,0.1)", color: issue.value ? "#10b981" : "#f43f5e", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
+                  {issue.value ? "Optimized" : "Action Req"}
+                </span>
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 900, color: "#fff", marginBottom: 8 }}>{issue.label}</h3>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "#6b7280", lineHeight: 1.6 }}>{issue.desc}</p>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* Before/After Visualization */}
-      <section className="px-6 py-24 max-w-7xl mx-auto border-t border-white/5">
-        <div className="flex flex-col lg:flex-row items-center gap-16">
-          <div className="flex-1">
-            <h2 className="text-4xl font-bold mb-6">The Competitive Impact</h2>
-            <p className="text-xl text-slate-400 leading-relaxed mb-8">
-              Based on your audit, your website is likely leaking revenue to competitors with more optimized digital funnels. Here is a visualization of the improvements we recommend.
-            </p>
-            <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/20 p-2 rounded-full mt-1.5"><ShieldCheck className="h-4 w-4 text-primary" /></div>
-                <div>
-                  <h4 className="font-bold text-lg">Fix Security Gaps</h4>
-                  <p className="text-slate-400 text-sm">Update SSL certificates and patch vulnerabilities to protect customers.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/20 p-2 rounded-full mt-1.5"><Zap className="h-4 w-4 text-primary" /></div>
-                <div>
-                  <h4 className="font-bold text-lg">Modernize Experience</h4>
-                  <p className="text-slate-400 text-sm">A refreshed, mobile-responsive layout increases trust by up to 75%.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/20 p-2 rounded-full mt-1.5"><Target className="h-4 w-4 text-primary" /></div>
-                <div>
-                  <h4 className="font-bold text-lg">Conversion Optimization</h4>
-                  <p className="text-slate-400 text-sm">Strategic CTAs turn browsers into booked calls and customers.</p>
-                </div>
-              </div>
+      {/* Analysis */}
+      <section style={{ padding: "100px 40px", backgroundColor: "#050608", borderTop: "1px solid #1a1b21", borderBottom: "1px solid #1a1b21" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 40 }}>
+            <div style={{ padding: 16, backgroundColor: "rgba(0,245,255,0.1)", borderRadius: 16, color: "#00f5ff" }}>
+              <MessageSquare style={{ width: 24, height: 24 }} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: 28, fontWeight: 900, color: "#fff" }}>AI Strategy Analysis</h2>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "#6b7280" }}>Custom insights for {lead.businessName}.</p>
             </div>
           </div>
 
-          <div className="flex-1 w-full relative">
-            <div className="grid grid-cols-2 gap-4">
-              {/* CURRENT */}
-              <div className="space-y-4">
-                <div className="text-center font-bold text-slate-500 uppercase tracking-widest text-xs">Current Presence</div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 h-[400px] overflow-hidden opacity-50 grayscale flex flex-col gap-4">
-                  <div className="w-2/3 h-4 bg-slate-700/50 rounded" />
-                  <div className="w-full h-32 bg-slate-700/30 rounded" />
-                  <div className="space-y-2">
-                    <div className="w-full h-3 bg-slate-800 rounded" />
-                    <div className="w-full h-3 bg-slate-800 rounded" />
-                    <div className="w-4/5 h-3 bg-slate-800 rounded" />
-                  </div>
-                  <div className="mt-4 w-1/3 h-8 bg-slate-700/50 rounded" />
-                  <div className="mt-auto border-t border-white/10 pt-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-4 w-4 text-red-500"><AlertTriangle className="h-full w-full" /></div>
-                      <span className="text-[10px] text-red-500 font-bold uppercase">Missing Security</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div style={{ backgroundColor: "#0c0d12", border: "1px solid #1a1b21", borderRadius: 32, padding: 48, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: 0, right: 0, padding: 24, fontSize: 80, fontWeight: 900, color: "rgba(255,255,255,0.02)", lineHeight: 0.8, pointerEvents: "none" }}>01</div>
+            
+            <p style={{ fontSize: 20, fontWeight: 500, color: "#d1d5db", lineHeight: 1.8, fontStyle: "italic", borderLeft: "3px solid rgba(0,245,255,0.4)", paddingLeft: 24, marginBottom: 40 }}>
+              &quot;{lead.report.summary}&quot;
+            </p>
 
-              {/* OPTIMIZED */}
-              <div className="space-y-4 relative">
-                <div className="text-center font-bold text-primary uppercase tracking-widest text-xs">Optimized presence</div>
-                <div className="bg-white/10 border-2 border-primary/40 rounded-2xl p-6 h-[400px] overflow-hidden flex flex-col gap-4 relative shadow-[0_0_50px_rgba(var(--primary),0.1)]">
-                   <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-                  <div className="w-1/2 h-5 bg-primary/20 rounded shadow-inner" />
-                  <div className="w-full h-32 bg-primary/10 rounded overflow-hidden relative">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Zap className="text-primary/50 h-12 w-12" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="w-full h-3 bg-primary/10 rounded" />
-                    <div className="w-full h-3 bg-primary/10 rounded" />
-                    <div className="w-2/3 h-3 bg-primary/10 rounded" />
-                  </div>
-                  <div className="mt-4 w-full h-10 bg-primary rounded-lg flex items-center justify-center text-[10px] font-black uppercase tracking-tighter">
-                    Book Your Quote Now
-                  </div>
-                  <div className="mt-auto border-t border-white/10 pt-4 flex items-center justify-between uppercase tracking-widest text-[8px] font-bold">
-                    <div className="flex items-center gap-1 text-green-500">
-                      <CheckCircle2 className="h-2 w-2" /> Fully Optimized
-                    </div>
-                    <div className="text-primary font-black">+250% ROI Possible</div>
-                  </div>
-                </div>
-                <div className="absolute -top-4 -right-4 bg-primary text-black px-3 py-1 rounded-full text-xs font-black rotate-12 shadow-lg">WINNING</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+              <div>
+                <h5 style={{ fontSize: 10, fontWeight: 900, color: "#6b7280", letterSpacing: "0.2em", textTransform: "uppercase" as const, marginBottom: 16 }}>Revenue Gaps</h5>
+                <ul style={{ listStyle: "none", padding: 0 }}>
+                  {topGaps.map((gap, i) => (
+                    <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12, fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>
+                      <ArrowRight style={{ width: 16, height: 16, color: "#f43f5e", marginTop: 2, flexShrink: 0 }} />
+                      {gap}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h5 style={{ fontSize: 10, fontWeight: 900, color: "#6b7280", letterSpacing: "0.2em", textTransform: "uppercase" as const, marginBottom: 16 }}>Impact Estimation</h5>
+                <p style={{ fontSize: 13, fontWeight: 500, color: "#9ca3af", lineHeight: 1.8 }}>
+                  {lead.report.whyGapsMatter}
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* AI Analysis Detail */}
-      <section className="px-6 py-24 bg-white/5 border-t border-b border-white/10">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 mb-12">
-            <div className="bg-primary/20 p-4 rounded-2xl">
-              <MessageSquare className="h-8 w-8 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-bold">Deep Strategy Analysis</h2>
-              <p className="text-slate-400">Our AI analyzed your unique business context.</p>
-            </div>
-          </div>
-
-          <div className="space-y-12">
-            <div className="p-8 bg-[#030712] rounded-3xl border border-white/5 relative group overflow-hidden">
-               <div className="absolute top-0 right-0 p-4 text-[60px] font-black text-white/5 pointer-events-none">01</div>
-              <h4 className="text-xl font-bold text-primary mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">Analysis Summary</h4>
-              <p className="text-lg text-slate-300 leading-relaxed italic border-l-2 border-primary/40 pl-6 mb-8">
-                "{lead.report.summary}"
-              </p>
-              
-              <div className="grid md:grid-cols-2 gap-8 mt-12">
-                <div>
-                  <h5 className="font-bold text-sm text-slate-500 uppercase tracking-widest mb-4">Urgent Fixes Required</h5>
-                  <ul className="space-y-3">
-                    {(lead.report.topGaps as string[]).map((gap, i) => (
-                      <li key={i} className="flex items-start gap-3 text-sm">
-                        <ArrowRight className="h-4 w-4 text-red-500 mt-0.5" />
-                        <span>{gap}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                   <h5 className="font-bold text-sm text-slate-500 uppercase tracking-widest mb-4">Impact Estimation</h5>
-                   <p className="text-sm leading-relaxed text-slate-400">
-                     {lead.report.whyGapsMatter}
-                   </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Recommended Service Package */}
-            <div className="mt-16 p-8 bg-white/5 border border-white/10 rounded-[2rem] overflow-hidden relative group transition-all hover:bg-white/[0.07]">
-               <div className="absolute top-0 right-0 p-6">
-                 <Badge className="bg-primary/20 text-primary border-primary/20">Tailored Fix</Badge>
-               </div>
-               <div className="flex flex-col md:flex-row gap-8 items-center">
-                  <div className="flex-1">
-                     <span className="text-[10px] font-black uppercase text-primary tracking-[0.2em] mb-4 block">Recommended Solution</span>
-                     <h3 className="text-3xl font-black mb-4">{(lead.report.serviceOffer as any)?.type || "Full Recovery Package"}</h3>
-                     <div className="space-y-4">
-                        <p className="text-sm text-slate-400">
-                          <span className="text-white font-bold block mb-1">Identified Problem:</span>
-                          {(lead.report.serviceOffer as any)?.problem}
-                        </p>
-                        <p className="text-sm text-slate-400">
-                           <span className="text-white font-bold block mb-1">Proposed Intervention:</span>
-                           {(lead.report.serviceOffer as any)?.solution}
-                        </p>
-                     </div>
-                  </div>
-                  <div className="w-full md:w-72 p-6 bg-primary rounded-2xl text-black flex flex-col items-center justify-center text-center shadow-xl shadow-primary/20">
-                     <span className="text-[10px] font-bold uppercase opacity-60 mb-2 whitespace-nowrap">Projected Business Impact</span>
-                     <span className="text-3xl font-black mb-4 leading-none">{(lead.report.serviceOffer as any)?.impact}</span>
-                     <Separator className="bg-black/10 mb-4" />
-                     <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold uppercase opacity-60">Investment</span>
-                        <span className="text-2xl font-black italic">{(lead.report.serviceOffer as any)?.price || "N/A"}</span>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* Strategic Call to Action Section */}
-            <div className="relative p-12 bg-primary rounded-[3rem] text-black overflow-hidden shadow-2xl shadow-primary/40">
-              <div className="absolute top-0 right-0 p-8">
-                <BarChart className="h-32 w-32 opacity-10 -rotate-12 translate-x-12 translate-y-12" />
-              </div>
-              <div className="relative z-10 max-w-xl">
-                 <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">Stop leaving revenue on the table.</h2>
-                 <p className="text-lg font-medium mb-8 opacity-80 leading-relaxed">
-                   We've prepared a full roadmap to fix these { (lead.report.topGaps as string[]).length } issues and increase your leads by {(scores.overallScore < 50) ? "3-5x" : "2x"} this quarter.
-                 </p>
-                 <Button size="lg" variant="default" className="bg-black text-white hover:bg-black/90 rounded-full px-12 py-6 text-lg font-bold shadow-2xl">
-                    Claim Your Roadmap & Fixing Plan
-                 </Button>
-                 <p className="mt-6 text-xs font-bold opacity-60 uppercase tracking-widest flex items-center gap-2">
-                    <Clock className="h-3 w-3" /> Offer expires in 48 hours for {lead.businessName}
-                 </p>
-              </div>
-            </div>
+      {/* CTA */}
+      <section style={{ padding: "100px 40px", maxWidth: 1200, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ backgroundColor: "#00f5ff", borderRadius: 48, padding: "80px 40px", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "relative", zIndex: 10, maxWidth: 640, margin: "0 auto" }}>
+            <h2 style={{ fontSize: 48, fontWeight: 900, color: "#000", letterSpacing: -2, marginBottom: 24, lineHeight: 1.1 }}>
+              Stop leaving revenue on the table.
+            </h2>
+            <p style={{ fontSize: 18, fontWeight: 700, color: "rgba(0,0,0,0.7)", marginBottom: 40, lineHeight: 1.5 }}>
+              We've mapped out exactly how to fix these flaws. Ready to scale {lead.businessName}?
+            </p>
+            <button style={{ padding: "20px 48px", backgroundColor: "#000", color: "#fff", border: "none", borderRadius: 999, fontSize: 14, fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" as const, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 12 }}>
+              CLAIM YOUR ROADMAP <ArrowUpRight style={{ width: 18, height: 18 }} />
+            </button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-12 text-center text-slate-500 text-sm">
-        <div className="mb-6 flex items-center justify-center gap-2">
-           <Zap className="h-4 w-4 text-primary" />
-           <span className="font-bold text-white">LeadAudit PRO</span>
+      <footer style={{ padding: "40px", textAlign: "center", borderTop: "1px solid #1a1b21" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
+          <Zap style={{ width: 16, height: 16, color: "#00f5ff" }} />
+          <span style={{ fontSize: 12, fontWeight: 900, color: "#fff" }}>STELV INTELLIGENCE</span>
         </div>
-        <p>© 2026 Audit Automation Engine. Confidential Report for {lead.businessName}.</p>
+        <p style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>
+          © 2026 Audit Protocol. Encrypted Report for {lead.businessName}.
+        </p>
       </footer>
     </div>
   );

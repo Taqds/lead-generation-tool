@@ -6,15 +6,22 @@ const prisma = new PrismaClient();
 async function main() {
   const hashedPassword = await bcrypt.hash("password123", 10);
 
-  const user = await prisma.user.upsert({
-    where: { email: "admin@leadaudit.com" },
-    update: {},
-    create: {
-      email: "admin@leadaudit.com",
-      name: "Admin User",
-      password: hashedPassword,
-    },
+  const existingUser = await prisma.user.findFirst({
+    where: { email: "admin@leadaudit.com" }
   });
+
+  let user;
+  if (!existingUser) {
+    user = await prisma.user.create({
+      data: {
+        email: "admin@leadaudit.com",
+        name: "Admin User",
+        password: hashedPassword,
+      },
+    });
+  } else {
+    user = existingUser;
+  }
 
   console.log({ user });
 

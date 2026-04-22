@@ -6,11 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
   email         String?   @unique
   emailVerified DateTime?
@@ -24,17 +25,17 @@ model User {
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
+  id                 String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String  @db.ObjectId
   type               String
   provider           String
   providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
+  refresh_token      String?
+  access_token       String?
   expires_at         Int?
   token_type         String?
   scope              String?
-  id_token           String?  @db.Text
+  id_token           String?
   session_state      String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -43,20 +44,20 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   sessionToken String   @unique
-  userId       String
+  userId       String   @db.ObjectId
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Campaign {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   niche     String
   location  String
   count     Int
   status    String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
-  userId    String
+  userId    String   @db.ObjectId
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   leads     Lead[]
   createdAt DateTime @default(now())
@@ -64,8 +65,8 @@ model Campaign {
 }
 
 model Lead {
-  id           String   @id @default(cuid())
-  campaignId   String
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  campaignId   String   @db.ObjectId
   campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   
   businessName String
@@ -90,7 +91,7 @@ model Lead {
   
   priority     String   @default("COLD") // HOT, WARM, COLD
   priorityScore Int     @default(0)
-  priorityReason String?  @db.Text
+  priorityReason String?
   
   status       String   @default("PENDING") // PENDING, AUDITING, REPORTING, DONE, FAILED
   slug         String?  @unique
@@ -99,8 +100,8 @@ model Lead {
 }
 
 model WebsiteAudit {
-  id           String   @id @default(cuid())
-  leadId       String   @unique
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  leadId       String   @unique @db.ObjectId
   lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   // Technical Data
@@ -132,22 +133,22 @@ model WebsiteAudit {
 }
 
 model LeadReport {
-  id           String   @id @default(cuid())
-  leadId       String   @unique
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  leadId       String   @unique @db.ObjectId
   lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
-  summary      String?  @db.Text
+  summary      String?
   topGaps      Json?    // Array of strings
-  whyGapsMatter String? @db.Text
-  recommendedFixes String? @db.Text
+  whyGapsMatter String?
+  recommendedFixes String?
   
   // AI Service Offer
   serviceOffer Json?    // { type: string, problem: string, solution: string, impact: string, price: string }
   
-  outreachAngle String? @db.Text
-  coldEmail     String? @db.Text
-  followUpEmail String? @db.Text
-  shortDm       String? @db.Text
+  outreachAngle String?
+  coldEmail     String?
+  followUpEmail String?
+  shortDm       String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

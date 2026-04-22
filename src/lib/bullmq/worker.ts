@@ -1,12 +1,12 @@
 import { Worker, Job } from "bullmq";
-import { connection } from "../redis";
-import prisma from "../prisma";
-import { discoverLeads } from "../services/discovery";
-import { crawlWebsite } from "../services/crawler";
-import { calculateAuditScores } from "../utils/scoring";
-import { generateLeadReport } from "../services/openai";
+import { connection } from "@/lib/redis";
+import prisma from "@/lib/prisma";
+import { discoverLeads } from "@/lib/services/discovery";
+import { crawlWebsite, CrawlResult } from "@/lib/services/crawler";
+import { calculateAuditScores } from "@/lib/utils/scoring";
+import { generateLeadReport } from "@/lib/services/openai";
 import { QUEUE_NAMES, leadAuditQueue, aiReportQueue } from "./queues";
-import { slugify } from "../utils";
+import { slugify } from "@/lib/utils";
 import crypto from "crypto";
 
 // 1. Discovery Worker
@@ -24,10 +24,13 @@ const discoveryWorker = new Worker(
       const discoveredLeads = await discoverLeads(niche, location, count);
       
       for (const leadData of discoveredLeads) {
+        const leadSlug = `${slugify(leadData.businessName)}-${crypto.randomBytes(4).toString("hex")}`;
+        
         const lead = await prisma.lead.create({
           data: {
             ...leadData,
             campaignId,
+            slug: leadSlug,
             status: "PENDING",
             isClaimed: leadData.isClaimed ?? true,
             hasGmbPhotos: leadData.hasGmbPhotos ?? true,
@@ -67,7 +70,7 @@ const auditWorker = new Worker(
     });
 
     try {
-      let crawlData = {
+      let crawlData: CrawlResult = {
         title: "", metaDescription: "", h1Count: 0, h2Count: 0, 
         hasSsl: false, hasContactForm: false, hasCta: false, 
         hasSchema: false, hasSocialLinks: false, hasReviewsSection: false,

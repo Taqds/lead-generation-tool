@@ -1,11 +1,6 @@
 import prisma from "@/lib/prisma";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ExternalLink, Mail, Phone, MapPin, Star, CheckCircle2, Clock, AlertCircle, Search, Download, Flame, Zap, Thermometer } from "lucide-react";
 import Link from "next/link";
+import { MapPin, ExternalLink, Mail, Phone, Database, Search, LayoutGrid } from "lucide-react";
 
 export default async function LeadsPage() {
   const leads = await prisma.lead.findMany({
@@ -14,152 +9,121 @@ export default async function LeadsPage() {
       audit: true,
     },
     orderBy: { createdAt: "desc" },
-    take: 100,
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "DONE": return <Badge className="bg-green-500/90 text-white"><CheckCircle2 className="mr-1 h-3 w-3" /> Done</Badge>;
-      case "AUDITING": return <Badge className="bg-blue-500 animate-pulse text-white"><Clock className="mr-1 h-3 w-3" /> Auditing</Badge>;
-      case "REPORTING": return <Badge className="bg-purple-500 animate-pulse text-white"><Clock className="mr-1 h-3 w-3" /> AI Report</Badge>;
-      case "FAILED": return <Badge variant="destructive"><AlertCircle className="mr-1 h-3 w-3" /> Failed</Badge>;
-      default: return <Badge variant="secondary"><Clock className="mr-1 h-3 w-3" /> Pending</Badge>;
-    }
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 70) return "text-green-600 bg-green-50 border-green-200";
-    if (score >= 40) return "text-amber-600 bg-amber-50 border-amber-200";
-    return "text-red-600 bg-red-50 border-red-200";
-  };
-
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case "HOT": return <Badge className="bg-red-500 hover:bg-red-600 text-white border-none"><Flame className="mr-1 h-3 w-3" /> HOT</Badge>;
-      case "WARM": return <Badge className="bg-orange-400 hover:bg-orange-500 text-white border-none"><Zap className="mr-1 h-3 w-3" /> WARM</Badge>;
-      default: return <Badge variant="secondary"><Thermometer className="mr-1 h-3 w-3" /> COLD</Badge>;
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", paddingBottom: 32, borderBottom: "1px solid #1a1b21", marginBottom: 40 }}>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">All Leads</h1>
-          <p className="text-muted-foreground">{leads.length} total leads across all campaigns.</p>
-        </div>
-        <div className="flex gap-2">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search leads..." className="pl-10" />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <div style={{ height: 3, width: 32, backgroundColor: "#00f5ff", borderRadius: 4 }} />
+            <span style={{ fontSize: 10, fontWeight: 900, color: "#00f5ff", letterSpacing: "0.4em", textTransform: "uppercase" as const }}>Database.Index</span>
           </div>
-          <Button variant="outline" asChild>
-            <Link href="/exports">
-              <Download className="mr-2 h-4 w-4" /> Export CSV
-            </Link>
-          </Button>
+          <h1 style={{ fontSize: 36, fontWeight: 900, color: "#fff", letterSpacing: -2, lineHeight: 1 }}>GLOBAL INTELLIGENCE</h1>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#3d4150", marginTop: 8 }}>Total extracted leads across all missions: {leads.length}</p>
         </div>
+        <button className="btn-primary">EXPORT CSV</button>
       </div>
 
-      <Card className="shadow-sm border-none bg-white dark:bg-slate-900">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50/50 dark:bg-slate-800/50">
-                <TableHead className="w-[180px]">Business</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Rating</TableHead>
-                <TableHead>Audit Score</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leads.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Search className="h-8 w-8 text-muted-foreground/50" />
-                      <p className="text-muted-foreground">No leads yet. Start a new campaign to discover leads.</p>
-                      <Button size="sm" asChild>
-                        <Link href="/campaigns/new">Create Campaign</Link>
-                      </Button>
+      {/* Table */}
+      <div className="panel" style={{ overflow: "hidden" }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Entity</th>
+              <th>Priority</th>
+              <th>Campaign</th>
+              <th>Contact</th>
+              <th>Rating</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th style={{ textAlign: "right" }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {leads.length === 0 ? (
+              <tr>
+                <td colSpan={8} style={{ textAlign: "center", padding: 60, color: "#3d4150", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
+                  No data discovered. Start a mission.
+                </td>
+              </tr>
+            ) : (
+              leads.map((lead) => (
+                <tr key={lead.id}>
+                  <td>
+                    <div style={{ fontWeight: 800, color: "#fff", fontSize: 13 }}>{lead.businessName}</div>
+                    <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                      {lead.webUrl && (
+                        <a href={lead.webUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#3d4150", display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}>
+                          <ExternalLink style={{ width: 12, height: 12 }} /> WEB
+                        </a>
+                      )}
+                      {lead.mapsLink && (
+                        <a href={lead.mapsLink} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#00f5ff", display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}>
+                          <MapPin style={{ width: 12, height: 12 }} /> GMB
+                        </a>
+                      )}
                     </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                leads.map((lead) => (
-                  <TableRow key={lead.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                    <TableCell>
-                      <div className="flex flex-col gap-0.5">
-                        <Link href={`/leads/${lead.id}`} className="font-semibold text-slate-900 dark:text-slate-100 hover:text-primary transition-colors">
-                          {lead.businessName}
-                        </Link>
-                        {lead.webUrl && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <ExternalLink className="h-3 w-3" />
-                            <span className="truncate max-w-[160px]">{lead.webUrl.replace(/^https?:\/\//, "")}</span>
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {getPriorityBadge(lead.priority)}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                        {lead.campaign.niche}
+                  </td>
+                  <td>
+                    <span style={{
+                      fontSize: 9, fontWeight: 900, padding: "4px 10px", borderRadius: 6,
+                      backgroundColor: lead.priority === "HOT" ? "rgba(244,63,94,0.15)" : "#15171e",
+                      color: lead.priority === "HOT" ? "#f43f5e" : "#6b7280",
+                      letterSpacing: "0.1em",
+                    }}>
+                      {lead.priority}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: "#6b7280" }}>{lead.campaign.niche}</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: "#3d4150" }}>{lead.campaign.location}</div>
+                  </td>
+                  <td>
+                    {lead.email && <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}><Mail style={{ width: 12, height: 12, color: "#00f5ff" }} /> {lead.email}</div>}
+                    {lead.phone && <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", display: "flex", alignItems: "center", gap: 6 }}><Phone style={{ width: 12, height: 12, color: "#00f5ff" }} /> {lead.phone}</div>}
+                  </td>
+                  <td>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: "#f59e0b" }}>
+                      ★ {lead.rating ? Number(lead.rating).toFixed(1) : "—"}
+                      <span style={{ fontSize: 9, color: "#3d4150", marginLeft: 4 }}>({lead.reviewCount || 0})</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{
+                      fontSize: 18, fontWeight: 900, fontFamily: "var(--font-mono)",
+                      color: (lead.audit?.overallScore || 0) > 70 ? "#10b981" : (lead.audit?.overallScore || 0) > 40 ? "#f59e0b" : "#6b7280",
+                    }}>
+                      {(lead.audit?.overallScore || 0).toString().padStart(2, "0")}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{
+                        width: 5, height: 5, borderRadius: "50%",
+                        backgroundColor: lead.status === "DONE" ? "#10b981" : lead.status === "FAILED" ? "#f43f5e" : "#3b82f6",
+                        boxShadow: `0 0 8px ${lead.status === "DONE" ? "rgba(16,185,129,0.6)" : lead.status === "FAILED" ? "rgba(244,63,94,0.6)" : "rgba(59,130,246,0.6)"}`,
+                      }} />
+                      <span style={{
+                        fontSize: 9, fontWeight: 900, letterSpacing: "0.15em",
+                        color: lead.status === "DONE" ? "#10b981" : lead.status === "FAILED" ? "#f43f5e" : "#3b82f6",
+                      }}>
+                        {lead.status === "DONE" ? "SUCCESS" : lead.status}
                       </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        {lead.email && (
-                          <span className="text-xs flex items-center gap-1 text-slate-600">
-                            <Mail className="h-3 w-3 text-slate-400" /> {lead.email}
-                          </span>
-                        )}
-                        {lead.phone && (
-                          <span className="text-xs flex items-center gap-1 text-slate-600">
-                            <Phone className="h-3 w-3 text-slate-400" /> {lead.phone}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {lead.rating ? (
-                        <div className="flex items-center gap-1 text-sm">
-                          <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-                          <span className="font-medium">{lead.rating.toFixed(1)}</span>
-                          <span className="text-xs text-muted-foreground">({lead.reviewCount})</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {lead.audit ? (
-                        <div className={`inline-flex items-center justify-center h-8 w-12 rounded-md border text-sm font-bold ${getScoreColor(lead.audit.overallScore)}`}>
-                          {lead.audit.overallScore}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(lead.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" asChild className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link href={`/leads/${lead.id}`}>View Details →</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    </div>
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    <Link href={`/leads/${lead.id}`} className="btn-ghost" style={{ padding: "8px 14px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <LayoutGrid style={{ width: 14, height: 14 }} /> VIEW
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

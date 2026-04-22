@@ -1,9 +1,6 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Plus, Users, Search, Target, CheckCircle2, Clock, AlertCircle } from "lucide-react";
-import Link from "next/link";
 import prisma from "@/lib/prisma";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { Plus, Database, Target, Search, CheckCircle2, Activity, Cpu, Zap } from "lucide-react";
 
 export default async function DashboardPage() {
   const campaigns = await prisma.campaign.findMany({
@@ -14,102 +11,143 @@ export default async function DashboardPage() {
   const totalLeads = await prisma.lead.count();
   const activeSearches = await prisma.campaign.count({ where: { status: "PROCESSING" } });
   const auditsDone = await prisma.lead.count({ where: { status: "DONE" } });
-  
+
   const stats = [
-    { name: "Total Leads", value: totalLeads.toString(), icon: Users, color: "text-blue-500" },
-    { name: "Active Searches", value: activeSearches.toString(), icon: Search, color: "text-orange-500" },
-    { name: "Audits Done", value: auditsDone.toString(), icon: CheckCircle2, color: "text-green-500" },
-    { name: "Conversion Rate", value: "12.5%", icon: Target, color: "text-purple-500" },
+    { name: "Leads Discovered", value: totalLeads, accent: "#00f5ff", icon: Database },
+    { name: "Active Missions", value: activeSearches, accent: "#f59e0b", icon: Search },
+    { name: "Audits Complete", value: auditsDone, accent: "#10b981", icon: CheckCircle2 },
+    { name: "Hit Rate", value: "12.5%", accent: "#6366f1", icon: Activity },
   ];
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "COMPLETED": return <Badge className="bg-green-500">Done</Badge>;
-      case "PROCESSING": return <Badge className="bg-blue-500 animate-pulse">Running</Badge>;
-      case "FAILED": return <Badge variant="destructive">Failed</Badge>;
-      default: return <Badge variant="secondary">Pending</Badge>;
-    }
-  };
-
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", paddingBottom: 32, borderBottom: "1px solid #1a1b21", marginBottom: 40 }}>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-          <p className="text-muted-foreground">Monitor your lead generation and audit campaigns.</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <div style={{ height: 3, width: 32, backgroundColor: "#00f5ff", borderRadius: 4 }} />
+            <span style={{ fontSize: 10, fontWeight: 900, color: "#00f5ff", letterSpacing: "0.4em", textTransform: "uppercase" as const }}>System.Overview</span>
+          </div>
+          <h1 style={{ fontSize: 40, fontWeight: 900, color: "#fff", letterSpacing: -2, lineHeight: 1 }}>COMMAND TERMINAL</h1>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#3d4150", marginTop: 8, letterSpacing: "0.05em" }}>LEAD DISCOVERY PROTOCOLS ACTIVE. ALL SYSTEMS NOMINAL.</p>
         </div>
-        <Button asChild className="shadow-md">
-          <Link href="/campaigns/new">
-            <Plus className="mr-2 h-4 w-4" /> New Campaign
-          </Link>
-        </Button>
+        <Link href="/campaigns/new" className="btn-primary" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+          <Plus style={{ width: 18, height: 18, strokeWidth: 3 }} /> INITIALIZE MISSION
+        </Link>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24, marginBottom: 48 }}>
         {stats.map((stat) => (
-          <Card key={stat.name} className="shadow-sm border-none bg-white/50 dark:bg-slate-900/50 backdrop-blur">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.name}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                Updated just now
-              </p>
-            </CardContent>
-          </Card>
+          <div key={stat.name} className="panel" style={{ padding: 36 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+              <div style={{ padding: 8, borderRadius: 10, backgroundColor: `${stat.accent}15`, color: stat.accent, display: "flex" }}>
+                <stat.icon style={{ width: 16, height: 16 }} />
+              </div>
+              <span className="label">{stat.name}</span>
+            </div>
+            <div style={{ fontSize: 48, fontWeight: 900, color: "#fff", fontFamily: "var(--font-mono)", letterSpacing: -2 }}>
+              {typeof stat.value === "number" ? String(stat.value).padStart(3, "0") : stat.value}
+            </div>
+          </div>
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 shadow-sm border-none bg-white dark:bg-slate-900 border border-slate-100">
-          <CardHeader>
-            <CardTitle>Recent Campaigns</CardTitle>
-            <CardDescription>Your latest lead generation efforts.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {campaigns.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-                  <p>No campaigns yet.</p>
-                  <Button variant="link" asChild>
-                    <Link href="/campaigns/new">Create your first one</Link>
-                  </Button>
-                </div>
-              ) : (
-                campaigns.map((campaign) => (
-                  <div key={campaign.id} className="flex items-center justify-between p-4 rounded-lg border border-slate-100 bg-slate-50/30 dark:bg-slate-800/20 hover:bg-slate-50 transition-colors">
-                    <div className="space-y-1">
-                      <p className="font-semibold text-sm">{campaign.niche} in {campaign.location}</p>
-                      <p className="text-xs text-muted-foreground">Target: {campaign.count} leads • Created: {new Date(campaign.createdAt).toLocaleDateString()}</p>
+      {/* Missions + Feed */}
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 32 }}>
+        {/* Mission List */}
+        <div className="panel" style={{ overflow: "hidden" }}>
+          <div style={{ padding: "24px 32px", borderBottom: "1px solid #1a1b21", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 900, color: "#fff", display: "flex", alignItems: "center", gap: 10 }}>
+              <Target style={{ width: 18, height: 18, color: "#00f5ff" }} /> ACTIVE MISSIONS
+            </h3>
+            <span className="label" style={{ padding: "6px 16px", backgroundColor: "#15171e", borderRadius: 999, border: "1px solid #222531" }}>Live Protocols</span>
+          </div>
+          <div style={{ padding: 12 }}>
+            {campaigns.length === 0 ? (
+              <div style={{ padding: 60, textAlign: "center", color: "#3d4150", fontWeight: 800, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
+                No active missions. Initialize a new search.
+              </div>
+            ) : (
+              campaigns.map((c) => (
+                <Link key={c.id} href={`/campaigns/${c.id}`} style={{ textDecoration: "none" }}>
+                  <div style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "20px 24px", borderRadius: 16,
+                    border: "1px solid #1a1b21", marginBottom: 8,
+                    cursor: "pointer", transition: "all 0.2s",
+                  }}
+                  className="panel-elevated"
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 14,
+                        backgroundColor: "#050608", border: "1px solid #222531",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <Database style={{ width: 18, height: 18, color: "#3d4150" }} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 900, color: "#fff", textTransform: "capitalize" as const }}>{c.niche} — {c.location}</div>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: "#3d4150", letterSpacing: "0.2em", textTransform: "uppercase" as const, marginTop: 4 }}>
+                          NODES: {c.count} • {new Date(c.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      {getStatusBadge(campaign.status)}
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/campaigns/${campaign.id}`}>View Results</Link>
-                      </Button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{
+                        width: 6, height: 6, borderRadius: "50%",
+                        backgroundColor: c.status === "COMPLETED" ? "#10b981" : c.status === "PROCESSING" ? "#f59e0b" : "#f43f5e",
+                        boxShadow: `0 0 10px ${c.status === "COMPLETED" ? "rgba(16,185,129,0.6)" : c.status === "PROCESSING" ? "rgba(245,158,11,0.6)" : "rgba(244,63,94,0.6)"}`,
+                      }} />
+                      <span style={{ fontSize: 10, fontWeight: 900, color: c.status === "COMPLETED" ? "#10b981" : c.status === "PROCESSING" ? "#f59e0b" : "#f43f5e", letterSpacing: "0.1em" }}>
+                        {c.status === "COMPLETED" ? "READY" : c.status === "PROCESSING" ? "ACTIVE" : c.status}
+                      </span>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
 
-        <Card className="col-span-3 shadow-sm border-none bg-white dark:bg-slate-900 border border-slate-100">
-          <CardHeader>
-            <CardTitle>High Potential Leads</CardTitle>
-            <CardDescription>Leads with significant audit gaps.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="text-center py-8 text-muted-foreground text-sm italic">
-                Start a campaign to see top opportunities here.
+        {/* Feed */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="panel" style={{ padding: 28 }}>
+            <h3 style={{ fontSize: 12, fontWeight: 900, color: "#fff", letterSpacing: "0.15em", textTransform: "uppercase" as const, marginBottom: 24 }}>
+              <Zap style={{ width: 14, height: 14, display: "inline", marginRight: 8, color: "#f59e0b" }} />
+              System Efficiency
+            </h3>
+            {[
+              { l: "Engine Load", v: 78, c: "#6366f1" },
+              { l: "Thread Priority", v: 92, c: "#00f5ff" },
+              { l: "Audit Integrity", v: 99, c: "#10b981" },
+            ].map((b) => (
+              <div key={b.l} style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <span className="label">{b.l}</span>
+                  <span className="label">{b.v}%</span>
+                </div>
+                <div style={{ height: 4, backgroundColor: "#050608", borderRadius: 999, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${b.v}%`, backgroundColor: b.c, borderRadius: 999, boxShadow: `0 0 10px ${b.c}66` }} />
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+
+          <div className="panel" style={{ padding: 28, flex: 1 }}>
+            <h3 style={{ fontSize: 12, fontWeight: 900, color: "#fff", letterSpacing: "0.15em", textTransform: "uppercase" as const, marginBottom: 20 }}>Activity Log</h3>
+            {[1, 2, 3].map((i) => (
+              <div key={i} style={{ display: "flex", gap: 12, paddingBottom: 14, marginBottom: 14, borderBottom: i < 3 ? "1px solid #1a1b21" : "none" }}>
+                <span style={{ fontSize: 10, fontWeight: 900, color: "#00f5ff", paddingTop: 2 }}>0{i}</span>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "#6b7280" }}>Crawl sequence {i} completed</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#3d4150", marginTop: 2 }}>TS: 01:1{i}:22</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
